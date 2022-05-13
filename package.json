@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "node-tesseract-ocr": "^2.2.1",
+    "puppeteer": "^14.0.0",
+    "yargs": "^17.5.0"
+  }
+}
