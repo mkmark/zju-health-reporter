@@ -1,9 +1,9 @@
 const max_vc_count_per_submission = 7;
-const max_submission_count = 2;
+const max_submission_count = 4;
 
 var argv = require('yargs/yargs')(process.argv.slice(2))
   .usage('Usage: node $0 [options]')
-  .example('node $0 -u username -p password -n 30.000000 -e 120.0000000')
+  .example('node $0 -u username -p password -n 30.000000 -e 120.0000000 --now')
   .alias('u', 'username')
   .nargs('u', 1)
   .describe('u', 'username')
@@ -16,6 +16,8 @@ var argv = require('yargs/yargs')(process.argv.slice(2))
   .alias('e', 'longitude')
   .nargs('e', 1)
   .describe('e', 'longitude')
+  .describe('now', 'skip waiting')
+  .boolean('now')
   .demandOption(['u', 'p'])
   .help('h')
   .alias('h', 'help')
@@ -28,6 +30,29 @@ const config = {
   psm: 7,
 };
 
+function random_between(min, max) {  
+  return Math.floor(
+    Math.random() * (max - min) + min
+  )
+}
+
+async function init() {
+  if (argv.now){
+    console.log('skip sleeping')
+  } else {
+    ms = random_between(0, 1200000);
+    console.log('start sleeping', ms)
+    await sleep(ms);
+  }
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+init();
 (async () => {
   const browser = await puppeteer.launch({
     headless: true,
@@ -86,9 +111,9 @@ const config = {
   await page.waitForNavigation();
 
   var submission_count = 0;
-  while (!is_successful && submission_count<max_submission_count){
+  while (!is_successful && submission_count++<max_submission_count){
     console.log('start processing', submission_count)
-    if (submission_count>0){
+    if (submission_count>1){
       await page.reload({ waitUntil: ["networkidle0", "domcontentloaded"] });
     }
 
@@ -138,7 +163,6 @@ const config = {
     })
     await page.waitForResponse(
       async response => {
-        submission_count++;
         let rsp_json = await response.json();
         console.log(rsp_json);
         if (rsp_json['e'] == 0){

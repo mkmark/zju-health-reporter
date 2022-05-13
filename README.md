@@ -2,7 +2,7 @@
 
 浙大自动健康打卡
 
-This tool reports status to healthreport.zju.edu.cn
+This tool reports status to healthreport.zju.edu.cn after a random time within 20 minutes (can be skipped by specifying '--now')
 
 ## prerequisite
 
@@ -25,7 +25,7 @@ then install dependencies
 npm install
 ```
 
-or 
+or
 
 ```sh
 yarn install
@@ -48,17 +48,17 @@ Options:
   -p, --password   password                                           [required]
   -n, --latitude   latitude
   -e, --longitude  longitude
+      --now        skip waiting                                        [boolean]
   -h, --help       Show help                                           [boolean]
 
 Examples:
-  node main.js -u username -p password -n 30.000000 -e 120.0000000
-
-Missing required arguments: u, p
+  node main.js -u username -p password -n 30.000000 -e 120.0000000 --now
 ```
 
 ## example
 
+```sh
+node main.js -u username -p password -n 30.000000 -e 120.0000000 --now
 ```
-node main.js -u username -p password -n 30.000000 -e 120.0000000
-```
+
 Get your precise location from a map, do not use this example!
