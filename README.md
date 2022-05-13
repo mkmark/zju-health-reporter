@@ -6,6 +6,12 @@ This tool reports status to healthreport.zju.edu.cn
 
 ## prerequisite
 
+need tesseract
+
+```sh
+sudo apt install -y tesseract-ocr
+```
+
 need nodejs installed, then
 
 ```sh

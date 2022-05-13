@@ -1,4 +1,4 @@
-const max_vc_count_per_submission = 5;
+const max_vc_count_per_submission = 7;
 const max_submission_count = 2;
 
 var argv = require('yargs/yargs')(process.argv.slice(2))
@@ -55,21 +55,22 @@ const config = {
   // listener
   var is_verify_code_processing = true;
   var is_verify_code_recognized = false;
-  var is_submitting = true;
   var is_successful = false;
   page.on('response', async response => {
     // listen verifyCode
-    if (response.url().startsWith('https://healthreport.zju.edu.cn/ncov/wap/default/code')) {
-      const img = await response.buffer();
-      await tesseract
+    // console.log(response.url())
+    if (response.url().startsWith('https://healthreport.zju.edu.cn/ncov/wap/default/code') && response.status() === 200) {
+      const img = await response.buffer()
+      .catch((error) => {
+        console.log(error.message);
+      });
+      img && await tesseract
         .recognize(img, config)
         .then((text) => {
-          return text.replace(/[^A-Z]/gi, '');
-        })
-        .then(async (text) => {
+          text = text.replace(/[^A-Z]/g, '');
           console.log(text)
           if (text.length == 4 && text[0]<text[1] && text[1]<text[2] && text[2]<text[3]){
-            await page.type('input[name="verifyCode"]', text);
+            page.type('input[name="verifyCode"]', text);
             is_verify_code_recognized = true;
           }
         })
@@ -78,16 +79,6 @@ const config = {
         })
         is_verify_code_processing = false;
     }
-
-    // listen save success
-    if (response.url() == 'https://healthreport.zju.edu.cn/ncov/wap/default/save') {
-      const rsp_json = await response.json();
-      is_submitting = false;
-      console.log(rsp_json);
-      if (rsp_json['e'] == '0'){
-        is_successful = true;
-      }
-    }
   });
 
   // login
@@ -95,11 +86,10 @@ const config = {
   await page.waitForNavigation();
 
   var submission_count = 0;
-  while (!is_successful && ++submission_count<max_submission_count){
+  while (!is_successful && submission_count<max_submission_count){
     console.log('start processing', submission_count)
-    if (submission_count>1){
-      page.goto('https://healthreport.zju.edu.cn/ncov/wap/default/index');
-      page.waitForNavigation()
+    if (submission_count>0){
+      await page.reload({ waitUntil: ["networkidle0", "domcontentloaded"] });
     }
 
     // 是否在校
@@ -108,6 +98,7 @@ const config = {
     // area
     console.log('getting area');
     await page.click('div[name="area"] > input[type=text]');
+    await page.waitForResponse(response => response.url().startsWith('https://restapi.amap.com/v3/geocode/regeo') && response.status() === 200);
 
     // 是否确认信息属实
     await page.click('div[name="sfqrxxss"] > div > div:nth-child(1)');
@@ -128,23 +119,38 @@ const config = {
         await page.waitForTimeout(100);
       }
     }
+    if (!is_verify_code_recognized){
+      console.log('verifyCode error for too many times. Something is wrong. Exiting.');
+      browser.close();
+      process.exit();
+    }
 
     // submit
     await page.click('div.list-box > div.footers > a'),
     // await page.screenshot({ path: 'submit_clicked.png' });
 
     // confirm
-    is_submitting = true;
     await page.click('div.wapcf-btn.wapcf-btn-ok')
     .catch((error) => {
       console.log('确认提交按钮未找到。打过卡了？');
+      browser.close();
       process.exit();
     })
-    while (is_submitting){
-      console.log('waiting for submission');
-      await page.waitForTimeout(100);
-    }
+    await page.waitForResponse(
+      async response => {
+        submission_count++;
+        let rsp_json = await response.json();
+        console.log(rsp_json);
+        if (rsp_json['e'] == 0){
+          is_successful = true;
+        }
+        return response.url() == 'https://healthreport.zju.edu.cn/ncov/wap/default/save' && response.status() === 200
+      });
     // await page.screenshot({ path: 'wapcf-btn-ok_clicked.png' });
+  }
+
+  if (!is_successful){
+    console.log('Submission error for too many times. Something is wrong. Exiting.');
   }
 
   await browser.close();
