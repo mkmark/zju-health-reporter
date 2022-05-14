@@ -1,5 +1,5 @@
 const max_vc_count_per_submission = 7;
-const max_submission_count = 4;
+const max_submission_count = 3;
 
 var argv = require('yargs/yargs')(process.argv.slice(2))
   .usage('Usage: node $0 [options]')
@@ -7,9 +7,11 @@ var argv = require('yargs/yargs')(process.argv.slice(2))
   .alias('u', 'username')
   .nargs('u', 1)
   .describe('u', 'username')
+  .string('username')
   .alias('p', 'password')
   .nargs('p', 1)
   .describe('p', 'password')
+  .string('password')
   .alias('n', 'latitude')
   .nargs('n', 1)
   .describe('n', 'latitude')
@@ -24,7 +26,7 @@ var argv = require('yargs/yargs')(process.argv.slice(2))
   .argv;
 const puppeteer = require('puppeteer');
 const tesseract = require("node-tesseract-ocr");
-const config = {
+const tesseract_config = {
   lang: "eng",
   oem: 1,
   psm: 7,
@@ -36,7 +38,7 @@ function random_between(min, max) {
   )
 }
 
-async function init() {
+async function delay() {
   if (argv.now){
     console.log('skip sleeping')
   } else {
@@ -52,8 +54,7 @@ function sleep(ms) {
   });
 }
 
-init();
-(async () => {
+async function main() {
   const browser = await puppeteer.launch({
     headless: true,
     ignoreHTTPSErrors: true,
@@ -90,7 +91,7 @@ init();
         console.log(error.message);
       });
       img && await tesseract
-        .recognize(img, config)
+        .recognize(img, tesseract_config)
         .then((text) => {
           text = text.replace(/[^A-Z]/g, '');
           console.log(text)
@@ -114,6 +115,7 @@ init();
   while (!is_successful && submission_count++<max_submission_count){
     console.log('start processing', submission_count)
     if (submission_count>1){
+      is_verify_code_recognized = false;
       await page.reload({ waitUntil: ["networkidle0", "domcontentloaded"] });
     }
 
@@ -127,7 +129,7 @@ init();
 
     // 是否确认信息属实
     await page.click('div[name="sfqrxxss"] > div > div:nth-child(1)');
-    // await page.screenshot({ path: 'form_filled.png' });
+    await page.screenshot({ path: 'form_filled.png' });
 
     // verifyCode
     var vc_count = 0;
@@ -152,7 +154,7 @@ init();
 
     // submit
     await page.click('div.list-box > div.footers > a'),
-    // await page.screenshot({ path: 'submit_clicked.png' });
+    await page.screenshot({ path: 'submit_clicked.png' });
 
     // confirm
     await page.click('div.wapcf-btn.wapcf-btn-ok')
@@ -161,16 +163,24 @@ init();
       browser.close();
       process.exit();
     })
+    let response_save;
     await page.waitForResponse(
       async response => {
-        let rsp_json = await response.json();
-        console.log(rsp_json);
-        if (rsp_json['e'] == 0){
-          is_successful = true;
+        if (response.url() == 'https://healthreport.zju.edu.cn/ncov/wap/default/save' && response.status() === 200){
+          response_save = response;
+          return true;
+        } else {
+          return false;
         }
-        return response.url() == 'https://healthreport.zju.edu.cn/ncov/wap/default/save' && response.status() === 200
-      });
-    // await page.screenshot({ path: 'wapcf-btn-ok_clicked.png' });
+      }
+    );
+    await page.screenshot({ path: 'wapcf-btn-ok_clicked.png' });
+
+    let response_save_json = await response_save.json();
+    console.log(response_save_json);
+    if (response_save_json['e'] == 0){
+      is_successful = true;
+    }
   }
 
   if (!is_successful){
@@ -178,4 +188,7 @@ init();
   }
 
   await browser.close();
-})();
+}
+
+delay();
+main();
