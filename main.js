@@ -86,15 +86,9 @@ function sleep(ms) {
   });
 }
 
-var IS_POSITION_OVERRIDE = false;
-
 async function init(browser, page) {
   const context = browser.defaultBrowserContext()
   await context.overridePermissions(FORM_URL, ['geolocation'])
-  if (argv.latitude && argv.longitude){
-    IS_POSITION_OVERRIDE = true;
-    await page.setGeolocation({latitude:argv.latitude, longitude:argv.longitude})
-  }
 
   // listener
   page.on('response', async response => {
@@ -109,7 +103,7 @@ async function init(browser, page) {
         .recognize(img, tesseract_config)
         .then((text) => {
           text = text.replace(/[^A-Z]/g, '');
-          console.log(text)
+          console.log('vc recognized ', text)
           if (text.length == 4 && text[0]<text[1] && text[1]<text[2] && text[2]<text[3]){
             page.type('input[name="verifyCode"]', text);
             IS_VC_RECOGNIZED = true;
@@ -132,17 +126,7 @@ async function login(browser, page) {
   await page.type('#password', argv.password);
 
   await page.click('#dl');
-
   await page.waitForNavigation({ waitUntil: "networkidle0" });
-
-  geo_api_info_str = await page.evaluate(() => vm.oldInfo.geo_api_info);
-  geo_api_info = JSON.parse(geo_api_info_str);
-
-  if (!IS_POSITION_OVERRIDE && geo_api_info.position.lat && geo_api_info.position.lng){
-    console.log('use old position ', geo_api_info.position.lat, geo_api_info.position.lng)
-    await page.setGeolocation({latitude:geo_api_info.position.lat, longitude:geo_api_info.position.lng})
-    await page.reload({ waitUntil: ["networkidle0"] });
-  }
 }
 
 async function fill_form(browser, page) {
@@ -156,6 +140,20 @@ async function fill_form(browser, page) {
   }
 
   // area
+  if (argv.latitude && argv.longitude){
+    await page.setGeolocation({latitude:argv.latitude, longitude:argv.longitude})
+  } else {
+    let geo_api_info_str = await page.evaluate(() => vm.oldInfo.geo_api_info);
+    let geo_api_info = JSON.parse(geo_api_info_str);
+    if (geo_api_info.position.lat && geo_api_info.position.lng) {
+      console.log('use old location ', geo_api_info.position.lat, geo_api_info.position.lng)
+      await page.setGeolocation({latitude:geo_api_info.position.lat, longitude:geo_api_info.position.lng})
+    } else {
+      console.log('fail to get location, exiting.');
+      await browser.close();
+      process.exit();
+    }
+  }
   console.log('getting area');
   await page.click('div[name="area"] > input[type=text]');
   await page.waitForResponse(response => response.url().startsWith(GEOAPI_URL_HEAD) && response.status() === 200);
