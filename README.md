@@ -4,6 +4,14 @@
 
 This tool reports status to healthreport.zju.edu.cn after a random time within 20 minutes (can be skipped by specifying '--now')
 
+默认选择：
+
+- 是否在校：是
+- 获取位置
+- 是否确认信息属实：是
+
+选择其他选项需要修改`fill_form`函数。
+
 ## prerequisite
 
 need tesseract
