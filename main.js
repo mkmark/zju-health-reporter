@@ -13,28 +13,38 @@ var IS_SUCCESSFUL = false;
 var argv = require('yargs/yargs')(process.argv.slice(2))
   .usage('Usage: node $0 [options]')
   .example('node $0 -u username -p password -n 30.000000 -e 120.0000000 --now --log')
+
   .alias('u', 'username')
   .nargs('u', 1)
   .describe('u', 'username')
   .string('u')
+  .demandOption('u')
+
   .alias('p', 'password')
   .nargs('p', 1)
   .describe('p', 'password')
   .string('p')
+  .demandOption('p')
+
   .alias('n', 'latitude')
   .nargs('n', 1)
-  .describe('n', 'latitude')
+  .describe('n', 'latitude override')
+
   .alias('e', 'longitude')
   .nargs('e', 1)
-  .describe('e', 'longitude')
+  .describe('e', 'longitude override')
+
   .describe('now', 'skip waiting')
   .boolean('now')
+
   .describe('log', 'log')
   .boolean('log')
-  .demandOption(['u', 'p'])
+
   .help('h')
   .alias('h', 'help')
+
   .argv;
+  
 const puppeteer = require('puppeteer');
 const tesseract = require("node-tesseract-ocr");
 const tesseract_config = {
@@ -76,10 +86,13 @@ function sleep(ms) {
   });
 }
 
+var IS_POSITION_OVERRIDE = false;
+
 async function init(browser, page) {
   const context = browser.defaultBrowserContext()
   await context.overridePermissions(FORM_URL, ['geolocation'])
   if (argv.latitude && argv.longitude){
+    IS_POSITION_OVERRIDE = true;
     await page.setGeolocation({latitude:argv.latitude, longitude:argv.longitude})
   }
 
@@ -111,18 +124,36 @@ async function init(browser, page) {
 }
 
 async function login(browser, page) {
-  await page.goto(FORM_URL, { waitUntil: ["networkidle0", "domcontentloaded"] });
+  console.log('logging in');
+
+  await page.goto(FORM_URL);
 
   await page.type('#username', argv.username);
   await page.type('#password', argv.password);
 
   await page.click('#dl');
-  await page.waitForNavigation({ waitUntil: ["networkidle0", "domcontentloaded"] });
+
+  await page.waitForNavigation({ waitUntil: "networkidle0" });
+
+  geo_api_info_str = await page.evaluate(() => vm.oldInfo.geo_api_info);
+  geo_api_info = JSON.parse(geo_api_info_str);
+
+  if (!IS_POSITION_OVERRIDE && geo_api_info.position.lat && geo_api_info.position.lng){
+    console.log('use old position ', geo_api_info.position.lat, geo_api_info.position.lng)
+    await page.setGeolocation({latitude:geo_api_info.position.lat, longitude:geo_api_info.position.lng})
+    await page.reload({ waitUntil: ["networkidle0"] });
+  }
 }
 
 async function fill_form(browser, page) {
   // 是否在校
-  await page.click('div[name="sfzx"] > div > div:nth-child(1)');
+  if (await page.evaluate(() => vm.oldInfo.sfzx) == '1'){
+    await page.click('div[name="sfzx"] > div > div:nth-child(1)');
+  } else {
+    await page.click('div[name="sfzx"] > div > div:nth-child(2)');
+    await page.click('div[name="sfymqjczrj"] > div > div:nth-child(2)');
+    await page.click('div[name="ismoved"] > div > div:nth-child(4)');
+  }
 
   // area
   console.log('getting area');
@@ -205,7 +236,7 @@ async function submit(browser, page) {
     console.log('start processing', submission_count)
     if (submission_count>1){
       IS_VC_RECOGNIZED = false;
-      await page.reload({ waitUntil: ["networkidle0", "domcontentloaded"] });
+      await page.reload({ waitUntil: ["networkidle0"] });
     }
     await try_submit(browser, page);
   }

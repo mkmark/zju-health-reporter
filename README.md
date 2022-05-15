@@ -4,14 +4,6 @@
 
 This tool reports status to healthreport.zju.edu.cn after a random time within 20 minutes (can be skipped by specifying '--now')
 
-默认选择：
-
-- 是否在校：是
-- 获取位置
-- 是否确认信息属实：是
-
-选择其他选项需要修改`fill_form`函数。
-
 ## prerequisite
 
 need tesseract
@@ -54,8 +46,8 @@ Options:
       --version    Show version number                                 [boolean]
   -u, --username   username                                  [string] [required]
   -p, --password   password                                  [string] [required]
-  -n, --latitude   latitude
-  -e, --longitude  longitude
+  -n, --latitude   latitude override
+  -e, --longitude  longitude override
       --now        skip waiting                                        [boolean]
       --log        log                                                 [boolean]
   -h, --help       Show help                                           [boolean]
@@ -69,7 +61,5 @@ Missing required arguments: u, p
 ## example
 
 ```sh
-node main.js -u username -p password -n 30.000000 -e 120.0000000 --now
+node main.js -u username -p password --now
 ```
-
-Get your precise location from a map, do not use this example!
