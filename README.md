@@ -44,15 +44,18 @@ Usage: node main.js [options]
 
 Options:
       --version    Show version number                                 [boolean]
-  -u, --username   username                                           [required]
-  -p, --password   password                                           [required]
+  -u, --username   username                                  [string] [required]
+  -p, --password   password                                  [string] [required]
   -n, --latitude   latitude
   -e, --longitude  longitude
       --now        skip waiting                                        [boolean]
+      --log        log                                                 [boolean]
   -h, --help       Show help                                           [boolean]
 
 Examples:
-  node main.js -u username -p password -n 30.000000 -e 120.0000000 --now
+  node main.js -u username -p password -n 30.000000 -e 120.0000000 --now --log
+
+Missing required arguments: u, p
 ```
 
 ## example
