@@ -10,6 +10,8 @@ var IS_VC_PROCESSING = true;
 var IS_VC_RECOGNIZED = false;
 var IS_SUCCESSFUL = false;
 
+
+// args
 var argv = require('yargs/yargs')(process.argv.slice(2))
   .usage('Usage: node $0 [options]')
   .example('node $0 -u username -p password -n 30.000000 -e 120.0000000 --now --log')
@@ -44,7 +46,27 @@ var argv = require('yargs/yargs')(process.argv.slice(2))
   .alias('h', 'help')
 
   .argv;
-  
+
+
+// log
+var fs = require('fs');
+var util = require('util');
+var log_file = fs.createWriteStream(__dirname + '/' + argv.username + '.log', {flags : 'a'});
+var log_stdout = process.stdout;
+
+function append_time(s){
+    var tzoffset = (new Date()).getTimezoneOffset() * 60000; //offset in milliseconds
+    var localISOTime = (new Date(Date.now() - tzoffset)).toISOString().slice(0, -1);
+    return localISOTime + ' ' + s
+    // return new Date().toISOString() + ' ' + s
+}
+
+console.log = function(d) { //
+  log_file.write(append_time(util.format(d)) + '\n');
+  log_stdout.write(append_time(util.format(d)) + '\n');
+};
+
+
 const puppeteer = require('puppeteer');
 const tesseract = require("node-tesseract-ocr");
 const tesseract_config = {
