@@ -42,6 +42,7 @@ Options:
   -p, --password   password                                  [string] [required]
   -n, --latitude   latitude override
   -e, --longitude  longitude override
+      --intl       use INTL id to login                                [boolean]
       --now        skip waiting                                        [boolean]
       --log        log                                                 [boolean]
   -h, --help       Show help                                           [boolean]
