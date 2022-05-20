@@ -6,12 +6,6 @@ This tool reports status to healthreport.zju.edu.cn after a random time within 2
 
 ## prerequisite
 
-need tesseract
-
-```sh
-sudo apt install -y tesseract-ocr
-```
-
 need nodejs installed, then
 
 ```sh

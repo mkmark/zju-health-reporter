@@ -2,6 +2,8 @@ const MAX_VC_COUNT_PER_SUBMISSION = 7;
 const MAX_SUBMISSION_COUNT = 3;
 
 const FORM_URL = 'https://healthreport.zju.edu.cn/ncov/wap/default/index';
+const LOGIN_URL = FORM_URL;
+const INTL_LOGIN_URL = 'https://login.microsoftonline.com/292620c5-ae10-4553-accf-68ec80325008/oauth2/v2.0/authorize?client_id=b85e9cdb-5584-4536-9108-5136aa1db133&response_type=code&redirect_uri=https%3a%2f%2fzjuam.zju.edu.cn%2fcas%2flogin%3fclient_name%3dAdfsClient&scope=https%3A%2F%2Fgraph.microsoft.com%2FUser.read'
 const SAVE_URL = 'https://healthreport.zju.edu.cn/ncov/wap/default/save';
 const VC_URL_HEAD = 'https://healthreport.zju.edu.cn/ncov/wap/default/code';
 const GEOAPI_URL_HEAD = 'https://restapi.amap.com/v3/geocode/regeo';
@@ -36,6 +38,9 @@ var argv = require('yargs/yargs')(process.argv.slice(2))
   .nargs('e', 1)
   .describe('e', 'longitude override')
 
+  .describe('intl', 'use INTL id to login')
+  .boolean('intl')
+
   .describe('now', 'skip waiting')
   .boolean('now')
 
@@ -68,7 +73,7 @@ console.log = function(d) { //
 
 
 const puppeteer = require('puppeteer');
-const tesseract = require("node-tesseract-ocr");
+// const tesseract = require("node-tesseract-ocr");
 const tesseract_config = {
   lang: "eng",
   oem: 1,
@@ -78,7 +83,7 @@ var browser_config = {};
 if (argv.log) {
   browser_config = {
     headless: true,
-    args: [`--window-size=1920,3000`],
+    args: [`--window-size=1920,3000,--lang=en-US,en`],
     defaultViewport: {
       width:1920,
       height:3000
@@ -141,8 +146,7 @@ async function init(browser, page) {
 
 async function login(browser, page) {
   console.log('logging in');
-
-  await page.goto(FORM_URL);
+  await page.goto(LOGIN_URL);
 
   await page.type('#username', argv.username);
   await page.type('#password', argv.password);
@@ -151,7 +155,30 @@ async function login(browser, page) {
   await page.waitForNavigation({ waitUntil: "networkidle0" });
 }
 
+async function login_intl(browser, page) {
+  console.log('logging in using intl');
+  await page.goto(INTL_LOGIN_URL, {waitUntil: 'networkidle0'});
+
+  await page.waitForSelector('input[name="loginfmt"]');
+  await page.type('input[name="loginfmt"]', argv.username);
+  await page.waitForSelector('input[value="Next"]');
+  await page.click('input[value="Next"]');
+
+  await page.type('input[name="passwd"]', argv.password);
+  await page.waitForSelector('input[value="Sign in"]');
+  await page.click('input[value="Sign in"]');
+
+  await page.waitForSelector('input[value="No"]');
+  await page.click('input[value="No"]');
+
+  await page.waitForNavigation({ waitUntil: "networkidle0" });
+
+  await page.goto(FORM_URL, {waitUntil: 'networkidle0'});
+}
+
 async function fill_form(browser, page) {
+  await page.waitForFunction(() => typeof vm === 'object');
+
   // 是否在校
   if (await page.evaluate(() => vm.oldInfo.sfzx) == '1'){
     await page.click('div[name="sfzx"] > div > div:nth-child(1)');
@@ -257,9 +284,9 @@ async function try_submit(browser, page) {
 async function submit(browser, page) {
   var submission_count = 0;
   while (!IS_SUCCESSFUL && submission_count++<MAX_SUBMISSION_COUNT){
-    console.log('start processing', submission_count)
+    console.log('start processing ' + submission_count)
     if (submission_count>1){
-      IS_VC_RECOGNIZED = false;
+      // IS_VC_RECOGNIZED = false;
       await page.reload({ waitUntil: ["networkidle0"] });
     }
     await try_submit(browser, page);
@@ -275,7 +302,11 @@ async function main(){
   const browser = await puppeteer.launch(browser_config);
   const page = await browser.newPage();
   await init(browser, page);
-  await login(browser, page);
+  if (argv.intl){
+    await login_intl(browser, page);
+  } else {
+    await login(browser, page);
+  }
   await submit(browser, page);
   await browser.close();
 }
