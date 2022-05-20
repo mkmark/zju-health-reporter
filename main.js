@@ -112,31 +112,31 @@ async function init(browser, page) {
   const context = browser.defaultBrowserContext()
   await context.overridePermissions(FORM_URL, ['geolocation'])
 
-  // listener
-  page.on('response', async response => {
-    // listen verifyCode
-    // console.log(response.url())
-    if (response.url().startsWith(VC_URL_HEAD) && response.status() === 200) {
-      const img = await response.buffer()
-      .catch((error) => {
-        console.log(error.message);
-      });
-      img && await tesseract
-        .recognize(img, tesseract_config)
-        .then((text) => {
-          text = text.replace(/[^A-Z]/g, '');
-          console.log('vc recognized ', text)
-          if (text.length == 4 && text[0]<text[1] && text[1]<text[2] && text[2]<text[3]){
-            page.type('input[name="verifyCode"]', text);
-            IS_VC_RECOGNIZED = true;
-          }
-        })
-        .catch((error) => {
-          console.log(error.message);
-        })
-        IS_VC_PROCESSING = false;
-    }
-  });
+  // // listener
+  // page.on('response', async response => {
+  //   // listen verifyCode
+  //   // console.log(response.url())
+  //   if (response.url().startsWith(VC_URL_HEAD) && response.status() === 200) {
+  //     const img = await response.buffer()
+  //     .catch((error) => {
+  //       console.log(error.message);
+  //     });
+  //     img && await tesseract
+  //       .recognize(img, tesseract_config)
+  //       .then((text) => {
+  //         text = text.replace(/[^A-Z]/g, '');
+  //         console.log('vc recognized ' + text)
+  //         if (text.length == 4 && text[0]<text[1] && text[1]<text[2] && text[2]<text[3]){
+  //           page.type('input[name="verifyCode"]', text);
+  //           IS_VC_RECOGNIZED = true;
+  //         }
+  //       })
+  //       .catch((error) => {
+  //         console.log(error.message);
+  //       })
+  //       IS_VC_PROCESSING = false;
+  //   }
+  // });
 }
 
 async function login(browser, page) {
@@ -188,16 +188,20 @@ async function fill_form(browser, page) {
 
 async function fill_vc(browser, page) {
   var vc_count = 0;
-  while (IS_VC_PROCESSING){
+  let vc_processing_time = 0;
+  while (IS_VC_PROCESSING && vc_processing_time < 5000){
     console.log('waiting for verify_code_processing');
+    vc_processing_time += 100;
     await page.waitForTimeout(100);
   }
   while (!IS_VC_RECOGNIZED && ++vc_count<MAX_VC_COUNT_PER_SUBMISSION){
     console.log('requesting new verifyCode');
     IS_VC_PROCESSING = true;
     await page.click('input[name="verifyCode"] + span > img');
-    while (IS_VC_PROCESSING){
+    vc_processing_time = 0;
+    while (IS_VC_PROCESSING && vc_processing_time < 5000){
       console.log('waiting for verify_code_processing');
+      vc_processing_time += 100;
       await page.waitForTimeout(100);
     }
   }
@@ -213,7 +217,7 @@ async function try_submit(browser, page) {
   await fill_form(browser, page)
 
   // verifyCode
-  await fill_vc(browser, page)
+  // await fill_vc(browser, page)
 
   // submit
   await page.click('div.list-box > div.footers > a'),
