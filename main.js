@@ -3,7 +3,7 @@ const MAX_SUBMISSION_COUNT = 3;
 
 const FORM_URL = 'https://healthreport.zju.edu.cn/ncov/wap/default/index';
 const LOGIN_URL = FORM_URL;
-const INTL_LOGIN_URL = 'https://login.microsoftonline.com/292620c5-ae10-4553-accf-68ec80325008/oauth2/v2.0/authorize?client_id=b85e9cdb-5584-4536-9108-5136aa1db133&response_type=code&redirect_uri=https%3a%2f%2fzjuam.zju.edu.cn%2fcas%2flogin%3fclient_name%3dAdfsClient&scope=https%3A%2F%2Fgraph.microsoft.com%2FUser.read'
+const LOGIN_INTL_URL = 'https://login.microsoftonline.com/292620c5-ae10-4553-accf-68ec80325008/oauth2/v2.0/authorize?client_id=b85e9cdb-5584-4536-9108-5136aa1db133&response_type=code&redirect_uri=https%3a%2f%2fzjuam.zju.edu.cn%2fcas%2flogin%3fclient_name%3dAdfsClient&scope=https%3A%2F%2Fgraph.microsoft.com%2FUser.read'
 const SAVE_URL = 'https://healthreport.zju.edu.cn/ncov/wap/default/save';
 const VC_URL_HEAD = 'https://healthreport.zju.edu.cn/ncov/wap/default/code';
 const GEOAPI_URL_HEAD = 'https://restapi.amap.com/v3/geocode/regeo';
@@ -157,7 +157,7 @@ async function login(browser, page) {
 
 async function login_intl(browser, page) {
   console.log('logging in using intl');
-  await page.goto(INTL_LOGIN_URL, {waitUntil: 'networkidle0'});
+  await page.goto(LOGIN_INTL_URL, {waitUntil: 'networkidle0'});
 
   await page.waitForSelector('input[name="loginfmt"]');
   await page.type('input[name="loginfmt"]', argv.username);
@@ -194,9 +194,9 @@ async function fill_form(browser, page) {
   } else {
     let geo_api_info_str = await page.evaluate(() => vm.oldInfo.geo_api_info);
     let geo_api_info = JSON.parse(geo_api_info_str);
-    if (geo_api_info.position.lat && geo_api_info.position.lng) {
-      console.log('use old location ', geo_api_info.position.lat, geo_api_info.position.lng)
-      await page.setGeolocation({latitude:geo_api_info.position.lat, longitude:geo_api_info.position.lng})
+    if (geo_api_info.position.Q && geo_api_info.position.R) {
+      console.log('use old location ', geo_api_info.position.Q, geo_api_info.position.R)
+      await page.setGeolocation({latitude:geo_api_info.position.Q, longitude:geo_api_info.position.R})
     } else {
       console.log('fail to get location, exiting.');
       await browser.close();
