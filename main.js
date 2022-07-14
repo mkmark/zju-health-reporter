@@ -56,7 +56,7 @@ var argv = require('yargs/yargs')(process.argv.slice(2))
 // log
 var fs = require('fs');
 var util = require('util');
-var log_file = fs.createWriteStream(__dirname + '/' + argv.username + '.log', {flags : 'a'});
+var log_file = fs.createWriteStream(__dirname + '/log/' + argv.username + '.log', {flags : 'a'});
 var log_stdout = process.stdout;
 
 function append_time(s){
@@ -210,7 +210,17 @@ async function fill_form(browser, page) {
   // 是否确认信息属实
   await page.click('div[name="sfqrxxss"] > div > div:nth-child(1)');
 
-  argv.log && await page.screenshot({ path: 'form_filled.png' });
+  // 是否实习
+  if ((await page.$('div[name="internship"]')) !== null) {
+    await page.click('div[name="internship"] > div > div:nth-child(3)');
+  }
+
+  // 今日申领健康码的状态
+  if ((await page.$('div[name="sqhzjkkys"]')) !== null) {
+    await page.click('div[name="sqhzjkkys"] > div > div:nth-child(1)');
+  }
+
+  argv.log && await page.screenshot({ path: 'screenshot/form_filled.png' });
 }
 
 async function fill_vc(browser, page) {
@@ -248,13 +258,13 @@ async function try_submit(browser, page) {
 
   // submit
   await page.click('div.list-box > div.footers > a'),
-  argv.log && await page.screenshot({ path: 'submit_clicked.png' });
+  argv.log && await page.screenshot({ path: 'screenshot/submit_clicked.png' });
 
   // confirm
   await page.click('div.wapcf-btn.wapcf-btn-ok')
   .catch(async (error) => {
-    await page.screenshot({ path: 'error.png' });
-    console.log('确认提交按钮未找到。请查看error.png。');
+    await page.screenshot({ path: 'screenshot/error.png' });
+    console.log('确认提交按钮未找到。请查看screenshot/error.png。');
     await browser.close();
     process.exit();
   })
@@ -269,10 +279,14 @@ async function try_submit(browser, page) {
       }
     }
   );
-  argv.log && await page.screenshot({ path: 'wapcf-btn-ok_clicked.png' });
+  argv.log && await page.screenshot({ path: 'screenshot/wapcf-btn-ok_clicked.png' });
 
   let response_save_json = await response_save.json();
-  console.log(response_save_json);
+  // if (response_save_json.m == '操作成功'){
+  //   console.log(success);
+  // } else {
+    console.log(response_save_json);
+  // }
   if (response_save_json['e'] == 0){
     IS_SUCCESSFUL = true;
   } else {

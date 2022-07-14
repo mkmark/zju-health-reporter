@@ -105,6 +105,6 @@ dist
 
 # custom
 /test
-/*.png
+screenshot/*.png
 /main.sh
 .ipynb_checkpoints
