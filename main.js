@@ -13,7 +13,7 @@ var IS_VC_RECOGNIZED = false;
 var IS_SUCCESSFUL = false;
 
 
-// args
+/// args
 var argv = require('yargs/yargs')(process.argv.slice(2))
   .usage('Usage: node $0 [options]')
   .example('node $0 -u username -p password -n 30.000000 -e 120.0000000 --now --log')
@@ -53,7 +53,7 @@ var argv = require('yargs/yargs')(process.argv.slice(2))
   .argv;
 
 
-// log
+/// log
 var fs = require('fs');
 var util = require('util');
 var log_file = fs.createWriteStream(__dirname + '/log/' + argv.username + '.log', {flags : 'a'});
@@ -179,16 +179,20 @@ async function login_intl(browser, page) {
 async function fill_form(browser, page) {
   await page.waitForFunction(() => typeof vm === 'object');
 
-  // 是否在校
+  /// 是否在校
   if (await page.evaluate(() => vm.oldInfo.sfzx) == '1'){
+    /// 是否在校
     await page.click('div[name="sfzx"] > div > div:nth-child(1)');
   } else {
+    /// 是否在校
     await page.click('div[name="sfzx"] > div > div:nth-child(2)');
+    /// 同住人员当天是否存在发热症状、红黄码状态或者14天内从境外返校情况
     await page.click('div[name="sfymqjczrj"] > div > div:nth-child(2)');
+    /// 今日是否有离开校区所在城市的外出安排
     await page.click('div[name="ismoved"] > div > div:nth-child(4)');
   }
 
-  // area
+  /// area
   if (argv.latitude && argv.longitude){
     await page.setGeolocation({latitude:argv.latitude, longitude:argv.longitude})
   } else {
@@ -207,15 +211,15 @@ async function fill_form(browser, page) {
   await page.click('div[name="area"] > input[type=text]');
   await page.waitForResponse(response => response.url().startsWith(GEOAPI_URL_HEAD) && response.status() === 200);
 
-  // 是否确认信息属实
+  /// 是否确认信息属实
   await page.click('div[name="sfqrxxss"] > div > div:nth-child(1)');
 
-  // 是否实习
+  /// 今日是否进行实习或实践
   if ((await page.$('div[name="internship"]')) !== null) {
     await page.click('div[name="internship"] > div > div:nth-child(3)');
   }
 
-  // 今日申领健康码的状态
+  /// 今日申领健康码的状态
   if ((await page.$('div[name="sqhzjkkys"]')) !== null) {
     await page.click('div[name="sqhzjkkys"] > div > div:nth-child(1)');
   }
@@ -250,17 +254,17 @@ async function fill_vc(browser, page) {
 }
 
 async function try_submit(browser, page) {
-  // fill the form
+  /// fill the form
   await fill_form(browser, page)
 
-  // verifyCode
+  /// verifyCode
   // await fill_vc(browser, page)
 
-  // submit
+  /// submit
   await page.click('div.list-box > div.footers > a'),
   argv.log && await page.screenshot({ path: 'screenshot/submit_clicked.png' });
 
-  // confirm
+  /// confirm
   await page.click('div.wapcf-btn.wapcf-btn-ok')
   .catch(async (error) => {
     await page.screenshot({ path: 'screenshot/error.png' });
