@@ -206,6 +206,7 @@ async function fill_form(browser, page) {
       const R = geo_api_info.position.R
       const N = 0.99901258140762605 * Q + 0.00048567339752076934 * R -0.02613553449233663
       const E = -0.00093805331464752917 * Q + 1.0009278301264584 * R -0.08774360393751124
+      console.log('get actual old location ' + N + ' ' + E)
       await page.setGeolocation({N, E})
     } else {
       console.log('fail to get location, exiting.');
