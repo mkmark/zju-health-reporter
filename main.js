@@ -201,11 +201,11 @@ async function fill_form(browser, page) {
     if (geo_api_info.position.Q && geo_api_info.position.R) {
       console.log('use old location ' + geo_api_info.position.Q + ' ' + geo_api_info.position.R)
       /// the location will drift!
-      /// the following linear transformation has a training accuracy of 0.9999999979082598 on a 12 sample dataset
+      /// the following linear transformation has a training accuracy of 0.9999999980786851 on a 26 sample dataset
       const Q = geo_api_info.position.Q
       const R = geo_api_info.position.R
-      const N = 1.047732384863375 * Q + 0.02695244630562446 * R
-      const E = 0.05696447277869715 * Q + 1.032912985676046 * R
+      N = 0.99901258140762605 * Q + 0.00048567339752076934 * R -0.02613553449233663
+      E = -0.00093805331464752917 * Q + 1.0009278301264584 * R -0.08774360393751124
       await page.setGeolocation({N, E})
     } else {
       console.log('fail to get location, exiting.');
