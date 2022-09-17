@@ -200,7 +200,13 @@ async function fill_form(browser, page) {
     let geo_api_info = JSON.parse(geo_api_info_str);
     if (geo_api_info.position.Q && geo_api_info.position.R) {
       console.log('use old location ' + geo_api_info.position.Q + ' ' + geo_api_info.position.R)
-      await page.setGeolocation({latitude:geo_api_info.position.Q, longitude:geo_api_info.position.R})
+      /// the location will drift!
+      /// the following linear transformation has a training accuracy of 0.9999999979082598 on a 12 sample dataset
+      const Q = geo_api_info.position.Q
+      const R = geo_api_info.position.R
+      const N = 1.047732384863375 * Q + 0.02695244630562446 * R
+      const E = 0.05696447277869715 * Q + 1.032912985676046 * R
+      await page.setGeolocation({N, E})
     } else {
       console.log('fail to get location, exiting.');
       await browser.close();
