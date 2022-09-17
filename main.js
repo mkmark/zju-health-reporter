@@ -199,7 +199,7 @@ async function fill_form(browser, page) {
     let geo_api_info_str = await page.evaluate(() => vm.oldInfo.geo_api_info);
     let geo_api_info = JSON.parse(geo_api_info_str);
     if (geo_api_info.position.Q && geo_api_info.position.R) {
-      console.log('use old location ', geo_api_info.position.Q, geo_api_info.position.R)
+      console.log('use old location ' + geo_api_info.position.Q + ' ' + geo_api_info.position.R)
       await page.setGeolocation({latitude:geo_api_info.position.Q, longitude:geo_api_info.position.R})
     } else {
       console.log('fail to get location, exiting.');
