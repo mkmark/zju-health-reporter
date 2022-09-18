@@ -82,11 +82,11 @@ const tesseract_config = {
 var browser_config = {};
 if (argv.log) {
   browser_config = {
-    headless: true,
-    args: [`--window-size=1920,3000,--lang=en-US,en`],
+    headless: false,
+    args: [`--window-size=1920,1080,--lang=en-US,en`],
     defaultViewport: {
       width:1920,
-      height:3000
+      height:1080
     }
   }
 }
@@ -207,7 +207,7 @@ async function fill_form(browser, page) {
       const N = 0.99901258140762605 * Q + 0.00048567339752076934 * R -0.02613553449233663
       const E = -0.00093805331464752917 * Q + 1.0009278301264584 * R -0.08774360393751124
       console.log('get actual old location ' + N + ' ' + E)
-      await page.setGeolocation({N, E})
+      await page.setGeolocation({latitude: N, longitude: E})
     } else {
       console.log('fail to get location, exiting.');
       await browser.close();
