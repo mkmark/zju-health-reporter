@@ -186,8 +186,6 @@ async function fill_form(browser, page) {
   } else {
     /// 是否在校
     await page.click('div[name="sfzx"] > div > div:nth-child(2)');
-    /// 同住人员当天是否存在发热症状、红黄码状态或者14天内从境外返校情况
-    await page.click('div[name="sfymqjczrj"] > div > div:nth-child(2)');
     /// 今日是否有离开校区所在城市的外出安排
     await page.click('div[name="ismoved"] > div > div:nth-child(4)');
   }
@@ -229,6 +227,11 @@ async function fill_form(browser, page) {
   /// 今日申领健康码的状态
   if ((await page.$('div[name="sqhzjkkys"]')) !== null) {
     await page.click('div[name="sqhzjkkys"] > div > div:nth-child(1)');
+  }
+
+  /// 同住人员当天是否存在发热症状、红黄码状态或者14天内从境外返校情况
+  if ((await page.$('div[name="sfymqjczrj"]')) !== null) {
+    await page.click('div[name="sfymqjczrj"] > div > div:nth-child(2)');
   }
 
   argv.log && await page.screenshot({ path: 'screenshot/form_filled.png' });
